@@ -11,6 +11,10 @@ public class Lwjgl3Launcher {
 	}
 
 	private static Lwjgl3Application createApplication() {
+		//Temporary
+		if (StartOnFirstThreadHelper.startNewJvmIfRequired())
+			return null;
+		
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		
 		config.setWindowIcon("icon.png");

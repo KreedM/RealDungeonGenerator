@@ -12,7 +12,7 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.dongbat.jbump.Collision;
+//import com.dongbat.jbump.Collision;
 import com.dongbat.jbump.CollisionFilter;
 import com.dongbat.jbump.Response.Result;
 import com.dongbat.jbump.World;
@@ -94,11 +94,16 @@ public class RoguelikeTest extends ApplicationAdapter {
 	}
 	
 	public void processCollisions(Result result) {
+		player.setPosition(world.getRect(player.getItem()).x - 8, world.getRect(player.getItem()).y - 6);
+		
+		/*
 		for (int i = 0; i < result.projectedCollisions.size(); i++) {
 			Collision collision = result.projectedCollisions.get(i);
 			
 			if (collision != null)
 				((Entity) collision.other.userData).processCollision(collision);
 		}
+		*/
+		
 	}
 }

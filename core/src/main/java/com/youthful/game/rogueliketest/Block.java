@@ -5,6 +5,7 @@ import com.dongbat.jbump.Collision;
 public class Block extends Entity {	
 	
 	public void processCollision(Collision collision) {
+		/*
 		if (collision.item.userData instanceof Player) {
 			Player player = (Player) collision.item.userData;
 			
@@ -27,6 +28,8 @@ public class Block extends Entity {
 				
 			player.setX(x - 8);
 			player.setY(y - 6);
+			
 		}
+		*/
 	}
 }
