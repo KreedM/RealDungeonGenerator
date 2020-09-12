@@ -36,8 +36,9 @@ public class RoguelikeTest extends ApplicationAdapter {
 		maze = new TmxMapLoader().load("maps/maze.tmx");
 		renderer = new OrthogonalTiledMapRenderer(maze, batch);
 		
-		TiledMapTileLayer collision = (TiledMapTileLayer) maze.getLayers().get("collision");
 		world = new World<Entity>();
+
+		TiledMapTileLayer collision = (TiledMapTileLayer) maze.getLayers().get("collision");
 		for (int i = 0; i < collision.getWidth(); i++) {
 			for (int j = 0; j < collision.getHeight(); j++) {
 				if (collision.getCell(i, j) != null) {
