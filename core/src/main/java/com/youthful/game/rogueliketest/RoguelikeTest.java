@@ -13,7 +13,6 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 //import com.dongbat.jbump.Collision;
-import com.dongbat.jbump.CollisionFilter;
 import com.dongbat.jbump.Response.Result;
 import com.dongbat.jbump.World;
 
@@ -24,12 +23,13 @@ public class RoguelikeTest extends ApplicationAdapter {
 	OrthogonalTiledMapRenderer renderer;
 	SpriteBatch batch;
 	World<Entity> world;
+	RushCollisionFilter filter;
 	
 	@Override
 	public void create () {
 		Gdx.input.setCursorCatched(true); //What does this actually do? Seems like it just makes cursor dissapear	
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
-		
+
 		viewport = new StretchViewport(480, 270);
 		batch = new SpriteBatch();
 		
@@ -37,6 +37,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 		renderer = new OrthogonalTiledMapRenderer(maze, batch);
 		
 		world = new World<Entity>();
+		filter = new RushCollisionFilter();
 
 		TiledMapTileLayer collision = (TiledMapTileLayer) maze.getLayers().get("collision");
 		for (int i = 0; i < collision.getWidth(); i++) {
@@ -63,7 +64,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 
 		player.act(Gdx.graphics.getDeltaTime()); //Processing Stage
 		
-		processCollisions(world.move(player.getItem(), player.getX() + 8, player.getY() + 6, CollisionFilter.defaultFilter));
+		processCollisions(world.move(player.getItem(), player.getX() + 8, player.getY() + 6, filter));
 		
 		viewport.getCamera().position.set(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2, 0);
 		

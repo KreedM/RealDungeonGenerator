@@ -2,7 +2,7 @@ package com.youthful.game.rogueliketest;
 
 import com.dongbat.jbump.Collision;
 
-public class Block extends Entity {	
+public class Block extends Entity implements Slidable{	
 	
 	public void processCollision(Collision collision) {
 		/*
