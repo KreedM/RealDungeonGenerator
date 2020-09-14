@@ -22,6 +22,10 @@ public class Lwjgl3Launcher {
 		config.setAutoIconify(true);
 		
 		//config.setWindowedMode(640, 360);
+
+		config.useOpenGL3(true, 3, 2);
+		
+		config.useVsync(true);
 		
 		config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
 		

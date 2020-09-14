@@ -40,7 +40,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 		Gdx.input.setCursorCatched(true); //What does this actually do? Seems like it just makes cursor dissapear	
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
 		
-		viewport = new StretchViewport(480, 270);
+		viewport = new StretchViewport(384, 216);
 		batch = new SpriteBatch();
 		
 		maze = new TmxMapLoader().load("maps/maze.tmx");
@@ -158,6 +158,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 					}
 				}
 			}
+			
 			if (interacting != null)
 				((Interactable) interacting.userData).interact(player);
 
