@@ -19,6 +19,10 @@ public class Lwjgl3Launcher {
 		
 		config.setWindowIcon("icon.png");
 		
+		config.setAutoIconify(true);
+		
+		//config.setWindowedMode(640, 360);
+		
 		config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
 		
 		return new Lwjgl3Application(new RoguelikeTest(), config);

@@ -2,6 +2,7 @@ package com.youthful.game.rogueliketest;
 
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Animation.PlayMode;
@@ -12,13 +13,16 @@ import com.dongbat.jbump.Collision;
 
 public class Player extends Entity implements InputProcessor {
 	private static final float FRAME_DURATION = 0.2f; 
-	private static final float SPEED = 100;
+	private static final float SPEED = 400;
 	
 	private Vector2 velocity;
+	
+	private OrthographicCamera camera;
 	
 	private boolean left, right, up, down;
 	private boolean leftHold, rightHold, upHold, downHold;
 	private boolean attacking;
+	private boolean interacting;
 
 	private byte xDir, yDir, prevXDir, prevYDir;
 	
@@ -32,7 +36,7 @@ public class Player extends Entity implements InputProcessor {
 	public Player(float x, float y, int width, int height) {
 		super();
 		
-		setBounds(x, y, 32, 32);
+		setBounds(x, y, width, height);
 		
 		Texture spriteSheet = new Texture("entities/player/spritesheet.png");
 		TextureRegion[][] regions = TextureRegion.split(spriteSheet, 32, 32);
@@ -55,7 +59,7 @@ public class Player extends Entity implements InputProcessor {
 		downLeftAnim.setPlayMode(PlayMode.LOOP);
 		downRightAnim.setPlayMode(PlayMode.LOOP);
 		
-		attackAnim = makeAnimation(new Texture("entities/player/AttackAnim.png"), 1 / 10f, 2, 5, 32, 32);
+		attackAnim = RoguelikeTest.makeAnimation(new Texture("entities/player/AttackAnim.png"), 1 / 10f, 2, 5, 32, 32);
 		
 		currAnim = upAnim;
 		
@@ -63,8 +67,6 @@ public class Player extends Entity implements InputProcessor {
 	}
 	
 	public void act(float delta) {
-		super.act(delta);
-		
 		processDirection(delta);
 		
 		processAnimations(delta);
@@ -73,9 +75,7 @@ public class Player extends Entity implements InputProcessor {
 		setY(getY() + velocity.y * delta);
 	}
 	
-	public void draw(Batch batch, float parentAlpha) {
-		batch.setColor(getColor().r, getColor().g, getColor().b, parentAlpha);
-		
+	public void draw(Batch batch) {
 		batch.draw(currAnim.getKeyFrame(moveTime), getX(), getY(), getOriginX(), getOriginY(), getWidth(), getHeight(), getScaleX(), getScaleY(), getRotation());
 		
 		if (attacking)
@@ -215,6 +215,9 @@ public class Player extends Entity implements InputProcessor {
 				break;
 			case Input.Keys.SPACE:
 				attacking = true;
+				break;
+			case Input.Keys.E:
+				interacting = true;
 		}
 		return true;
 	}
@@ -252,20 +255,16 @@ public class Player extends Entity implements InputProcessor {
 		return false;
 	}
 	
-	public static Animation<TextureRegion> makeAnimation(Texture tex, float frameDuration, int rows, int columns, int cellWidth, int cellHeight) {
-		TextureRegion[][] split = TextureRegion.split(tex, cellWidth, cellHeight);
-		
-		TextureRegion[] reel = new TextureRegion[rows * columns];
-		
-		int index = 0;
-		
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < columns; j++) {
-				reel[index++] = split[i][j]; 
-			}
-		}
-		
-		return new Animation<TextureRegion>(frameDuration, reel);
+	public OrthographicCamera getCamera() {
+		return camera;
+	}
+	
+	public boolean getInteracting() {
+		return interacting;
+	}
+	
+	public void setInteracting(boolean interacting) {
+		this.interacting = interacting;
 	}
 	
 	public boolean keyTyped(char character) {return false;}

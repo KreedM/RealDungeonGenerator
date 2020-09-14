@@ -6,6 +6,8 @@ import com.dongbat.jbump.Response;
 
 public class RushCollisionFilter implements CollisionFilter {
 	public Response filter(Item item, Item other) {
+		if (other == null)
+			return null;
 		if (other.userData instanceof Slidable)
 			return Response.slide;
 		else if(other.userData instanceof Touchable)
