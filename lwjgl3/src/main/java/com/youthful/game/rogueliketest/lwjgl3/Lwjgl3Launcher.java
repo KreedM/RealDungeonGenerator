@@ -21,13 +21,13 @@ public class Lwjgl3Launcher {
 		
 		config.setAutoIconify(true);
 		
-		//config.setWindowedMode(640, 360);
+		//config.setWindowedMode(1280, 720);
 
-		config.useOpenGL3(true, 3, 2);
-		
-		config.useVsync(true);
-		
 		config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+		
+		//config.useOpenGL3(true, 3, 2);
+		
+		//config.useVsync(true);
 		
 		return new Lwjgl3Application(new RoguelikeTest(), config);
 	}

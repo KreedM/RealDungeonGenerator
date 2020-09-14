@@ -33,6 +33,7 @@ public class Dummy extends Entity implements Slidable, Interactable {
 		
 		TextureAtlas atlas = new TextureAtlas("Dawnlike.atlas");
 		font = new BitmapFont(Gdx.files.internal("font.fnt"), atlas.findRegion("font"));
+		font.getData().setScale(1 / 3f);
 		font.setUseIntegerPositions(false);
 		layout = new GlyphLayout();
 		
@@ -54,7 +55,7 @@ public class Dummy extends Entity implements Slidable, Interactable {
 		if(interacting) {
 			if (interactTime < MESSAGE_TIME) {
 				layout.setText(font, message, 0, message.length(), getColor(), MESSAGE_WIDTH, Align.center, true, null);
-				font.draw(batch, layout, getX() + (getWidth() - layout.width) / 2, getTop() + layout.height);
+				font.draw(batch, layout, getX() + (getWidth() - MESSAGE_WIDTH) / 2, getTop() + layout.height);
 				interactTime += Gdx.graphics.getDeltaTime();
 			}
 			else {

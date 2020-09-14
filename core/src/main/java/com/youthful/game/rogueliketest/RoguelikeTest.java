@@ -59,7 +59,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 			}
 		}
 		
-		player = new Player(24, 24, 32, 32);
+		player = new Player(560, 458, 32, 32);
 		world.add(player.getItem(), player.getX() + 8, player.getY() + 6, 16, 16);
 		
 		dummy1 = new Dummy(528, 512, 32, 32);
