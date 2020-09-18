@@ -1,10 +1,10 @@
 package com.youthful.game.rogueliketest;
 
-import java.util.ArrayList;
+import javax.swing.JFrame;
+
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,19 +12,20 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TiledMapTile;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.Box2D;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import box2dLight.PointLight;
-import box2dLight.RayHandler;
+import com.youthful.game.generator.DungeonGenerator;
+import com.youthful.game.generator.Leaf;
+import com.youthful.game.generator.Rectangle;
 
 public class RoguelikeTest extends ApplicationAdapter {
 	private static final float TIME_STEP = 1 / 120f;
@@ -32,20 +33,18 @@ public class RoguelikeTest extends ApplicationAdapter {
 	private float Box2DTime;
 	
 	private Player player;
-	private Dummy dummy1, dummy2, dummy3;
 	
 	private Viewport viewport;
 
 	private SpriteBatch batch;
 	
-	private TiledMap maze;
+	private TiledMap room;
 	private OrthogonalTiledMapRenderer renderer;
 	
 	private World world;
 	private Box2DDebugRenderer br;
-	private ArrayList<Body> interacting;
-	private RayHandler handler;
-	private InteractCallback callback;
+	
+	private Music BOTW;
 	
 	@Override
 	public void create () {
@@ -56,43 +55,97 @@ public class RoguelikeTest extends ApplicationAdapter {
 		viewport = new StretchViewport(24, 13.5f);
 		batch = new SpriteBatch();
 		
-		maze = new TmxMapLoader().load("maps/maze.tmx");
-		renderer = new OrthogonalTiledMapRenderer(maze, 1 / 16f, batch);
-
-		interacting = new ArrayList<Body>();
-		
 		world = new World(new Vector2(0, 0), true);
 		br = new Box2DDebugRenderer();
-		callback = new InteractCallback(interacting);
-		handler = new RayHandler(world);
-		handler.setAmbientLight(0, 0, 0, 0.05f);
-		
-
-		TiledMapTileLayer collision = (TiledMapTileLayer) maze.getLayers().get("collision");
-		for (int i = 0; i < collision.getWidth(); i++) {
-			for (int j = 0; j < collision.getHeight(); j++) {
-				if (collision.getCell(i, j) != null)
-					new Block(i, j, 1, 1, world);
-			}
-		}
 		
 		player = new Player(560 / 16f, 458 / 16f, 2, 2, world);
-		new PointLight(handler, 100).attachToBody(player.getBody());
 		
-		dummy1 = new Dummy(528 / 16f, 512 / 16f, 2, 2, world);
-		
-		dummy2 = new Dummy(560 / 16f, 512 / 16f, 2, 2, world);
-		
-		dummy3 = new Dummy(592 / 16f, 512 / 16f, 2, 2, world);
+		createDungeon();
 		
 		Gdx.input.setInputProcessor(player);
-		Music BOTW = Gdx.audio.newMusic(Gdx.files.internal("BOTW.mp3"));
+		
+		BOTW = Gdx.audio.newMusic(Gdx.files.internal("BOTW.mp3"));
 		BOTW.setVolume(0.1f);
 		BOTW.setLooping(true);
 		BOTW.play();
 	}
+	
+	public void createDungeon() {
+		DungeonGenerator generator = new DungeonGenerator(50, 6, true);
+		TiledMap dungeon = new TiledMap();
+		room = new TmxMapLoader().load("maps/walls.tmx");
+		TiledMapTileLayer dungeonLayer = new TiledMapTileLayer(50, 50, 16, 16), roomLayer = (TiledMapTileLayer) room.getLayers().get(0);
+		
+		TiledMapTile[][] roomTiles = new TiledMapTile[4][4];
+		
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++)
+				roomTiles[i][j] = roomLayer.getCell(i, j).getTile();
+		}
+		
+		for (int i = 0; i < 50; i++) {
+			for (int j = 0; j < 50; j++) {
+				Cell cell = new Cell();
+				
+				dungeonLayer.setCell(i, j, cell);
+				
+				if (generator.corridors[i][j])
+					cell.setTile(roomTiles[3][3]);
+			}
+		}
+		
+		for (Leaf roomLeaf : generator.leaves) {
+			copyRoom(roomLeaf.room, dungeonLayer, roomTiles, generator.corridors);
+		}
+		
+		for (int i = 0; i < 50; i++) {
+			for (int j = 0; j < 50; j++) {
+				if(dungeonLayer.getCell(i, j).getTile() != null && dungeonLayer.getCell(i, j).getTile().getProperties().containsKey("blocked"))
+					new Block(i, j, 1, 1, world);
+			}
+		}
+		
+		dungeon.getLayers().add(dungeonLayer);
+		
+		renderer = new OrthogonalTiledMapRenderer(dungeon, 1 / 16f);
+		/*
+		JFrame frame = new JFrame();
+		frame.setTitle("Dungeon Drawer");
+		frame.setContentPane(new DungeonDrawer(generator.size, generator.leaves, generator.corridors));
+		frame.pack();
+		frame.setLocationRelativeTo(null);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setVisible(true);
+		*/
+	}
+	
+	private void copyRoom(Rectangle rect, TiledMapTileLayer dungeonLayer, TiledMapTile[][] roomTiles, boolean[][] corridors) {
+		dungeonLayer.getCell(rect.x, rect.y).setTile(roomTiles[0][0]);
+		dungeonLayer.getCell(rect.x, rect.y + rect.height - 1).setTile(roomTiles[0][3]);
+		dungeonLayer.getCell(rect.x + rect.width - 1, rect.y + rect.height - 1).setTile(roomTiles[2][3]);
+		dungeonLayer.getCell(rect.x + rect.width - 1, rect.y).setTile(roomTiles[2][0]);
+		
+		for (int i = 1; i < rect.width - 1; i++) {
+			if (!corridors[rect.x + i][rect.y])	
+				dungeonLayer.getCell(rect.x + i, rect.y).setTile(roomTiles[1][0]);
+			if(!corridors[rect.x + i][rect.y + rect.height - 1])
+				dungeonLayer.getCell(rect.x + i, rect.y + rect.height - 1).setTile(roomTiles[1][3]);
+			if(!corridors[rect.x + i][ rect.y + rect.height - 2])
+				dungeonLayer.getCell(rect.x + i, rect.y + rect.height - 2).setTile(roomTiles[1][2]);
+			
+			for (int j = 1; j < rect.height - 2; j++)
+				dungeonLayer.getCell(rect.x + i, rect.y + j).setTile(roomTiles[3][2]);
+		}
+		
+		for (int i = 1; i < rect.height - 1; i++) {
+			if(!corridors[rect.x][ rect.y + i])
+				dungeonLayer.getCell(rect.x, rect.y + i).setTile(roomTiles[0][1]);
+			if(!corridors[rect.x + rect.width - 1][ rect.y + i])
+				dungeonLayer.getCell(rect.x + rect.width - 1, rect.y + i).setTile(roomTiles[2][1]);
+		}
+	}
 
-	public void render () {
+	public void render() {
 		//Gdx.input.setCursorPosition(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2); 
 		
 		float time = Gdx.graphics.getDeltaTime();
@@ -106,7 +159,6 @@ public class RoguelikeTest extends ApplicationAdapter {
 			world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
 		}
 
-		processCollisions();
 		processPositions();
 		
 		viewport.getCamera().position.set(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2, 0); //Rendering stage
@@ -123,60 +175,17 @@ public class RoguelikeTest extends ApplicationAdapter {
 		
 		batch.begin();
 		player.draw(batch);
-		dummy1.draw(batch);
-		dummy2.draw(batch);
-		dummy3.draw(batch);
 		batch.end();
 		
-		br.render(world, viewport.getCamera().combined.translate(new Vector3(0.5f, 0.5f, 0)));
-		
-		handler.setCombinedMatrix((OrthographicCamera) viewport.getCamera());
-		handler.updateAndRender();
+		br.render(world, viewport.getCamera().combined);
 	}
 	
 	private void processActs(float time) {
 		player.act(time);
-		dummy1.act(time);
-		dummy2.act(time);
-		dummy3.act(time);
 	}
 	
 	private void processPositions() {
 		player.updatePosition();
-	}
-	
-	public void processCollisions() {
-		/*
-		for (int i = 0; i < result.projectedCollisions.size(); i++) {
-			Collision collision = result.projectedCollisions.get(i);
-			
-			if (collision != null)
-				((Entity) collision.other.userData).processCollision(collision);
-		}
-		*/
-		
-		if (player.getInteracting()) {
-			interacting.clear();
-
-			world.QueryAABB(callback, player.getBody().getPosition().x - 16, player.getBody().getPosition().y - 16, player.getBody().getPosition().x + 16, player.getBody().getPosition().y + 16);
-			
-			float distance = Float.MAX_VALUE, dist2 = 0, x = player.getBody().getPosition().x, y = player.getBody().getPosition().y;
-			Interactable interactor = null;
-			
-			for (Body body : interacting) {
-				dist2 = Vector2.dst2(x, y, body.getPosition().x, body.getPosition().y);
-				
-				if (dist2 < distance) {
-					distance = dist2;
-					interactor = (Interactable) body.getUserData();
-				}
-			}
-			
-			if(interactor != null)
-				interactor.interact(player);
-				
-			player.setInteracting(false);
-		}
 	}
 	
 	public void resize(int width, int height) {
@@ -185,8 +194,9 @@ public class RoguelikeTest extends ApplicationAdapter {
 	
 	public void dispose () {
 		renderer.dispose();
-		maze.dispose();
 		batch.dispose();
+		room.dispose();
+		BOTW.dispose();
 	}
 	
 	public static Animation<TextureRegion> makeAnimation(Texture tex, float frameDuration, int rows, int columns, int cellWidth, int cellHeight) {

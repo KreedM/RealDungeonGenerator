@@ -8,8 +8,9 @@ import com.badlogic.gdx.physics.box2d.World;
 
 public class Block extends Entity implements Slidable{	
 	
-	public Block(float x, float y, int width, int height, World world) {
+	public Block(float x, float y, float width, float height, World world) {
 		super(x, y, width, height);
+		
 		createBody(world);
 	}
 
@@ -19,7 +20,7 @@ public class Block extends Entity implements Slidable{
 		BodyDef tileDef = new BodyDef();
 		tileDef.type = BodyType.StaticBody;
 		
-		tileDef.position.set(getX(), getY());
+		tileDef.position.set(getX() + getWidth() / 2, getY() + getHeight() / 2);
 		
 		Body tile = world.createBody(tileDef);
 		

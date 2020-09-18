@@ -36,6 +36,7 @@ public class Player extends Entity implements InputProcessor {
 	
 	public Player(float x, float y, float width, float height, World world) {
 		super(x, y, width, height);
+		
 		createBody(world);
 		
 		velocity = new Vector2();
@@ -187,7 +188,7 @@ public class Player extends Entity implements InputProcessor {
 	}
 	
 	public void updatePosition() {
-		setPosition(getBody().getPosition().x - 0.5f, getBody().getPosition().y - 6 / 16f);
+		setPosition(getBody().getPosition().x - getWidth() / 2, getBody().getPosition().y - getHeight() / 2);
 	}
 	
 	public boolean keyDown(int keycode) {
@@ -262,14 +263,14 @@ public class Player extends Entity implements InputProcessor {
 		BodyDef playerDef = new BodyDef();
 		playerDef.type = BodyType.DynamicBody;
 		
-		playerDef.position.set(getX() + 0.5f, getY() + 6 / 16f);
+		playerDef.position.set(getX() + getWidth() / 2, getY() + getHeight() / 2);
 		
 		Body player = world.createBody(playerDef);
 		
 		player.setUserData(this);
 		
 		PolygonShape playerShape = new PolygonShape();
-		playerShape.setAsBox(0.5f, 0.5f);
+		playerShape.setAsBox(0.45f, 0.45f);
 		
 		player.createFixture(playerShape, 0);
 		
