@@ -1,10 +1,10 @@
 package com.youthful.game.rogueliketest;
 
 import java.util.ArrayList;
-
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -16,60 +16,72 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.Box2D;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.dongbat.jbump.Item;
-import com.dongbat.jbump.Rect;
-//import com.dongbat.jbump.Collision;
-import com.dongbat.jbump.Response.Result;
-import com.dongbat.jbump.World;
+
+import box2dLight.PointLight;
+import box2dLight.RayHandler;
 
 public class RoguelikeTest extends ApplicationAdapter {
+	private static final float TIME_STEP = 1 / 120f;
+	private static final int VELOCITY_ITERATIONS = 6, POSITION_ITERATIONS = 2;
+	private float Box2DTime;
+	
 	private Player player;
 	private Dummy dummy1, dummy2, dummy3;
+	
 	private Viewport viewport;
+
+	private SpriteBatch batch;
+	
 	private TiledMap maze;
 	private OrthogonalTiledMapRenderer renderer;
-	private SpriteBatch batch;
-	private World<Entity> world;
-	private RushCollisionFilter filter;
-	private ArrayList<Item> interacted;
+	
+	private World world;
+	private Box2DDebugRenderer br;
+	private ArrayList<Body> interacted;
+	private RayHandler handler;
 	
 	@Override
 	public void create () {
+		Box2D.init();
 		Gdx.input.setCursorCatched(true); //What does this actually do? Seems like it just makes cursor dissapear	
 		Gdx.gl.glClearColor(0, 0, 0.2f, 1);
 		
-		viewport = new StretchViewport(384, 216);
+		viewport = new StretchViewport(24, 13.5f);
 		batch = new SpriteBatch();
 		
 		maze = new TmxMapLoader().load("maps/maze.tmx");
-		renderer = new OrthogonalTiledMapRenderer(maze, batch);
-		
-		world = new World<Entity>();
-		filter = new RushCollisionFilter();
-		interacted = new ArrayList<Item>();
+		renderer = new OrthogonalTiledMapRenderer(maze, 1 / 16f, batch);
+
+		world = new World(new Vector2(0, 0), true);
+		br = new Box2DDebugRenderer();
+		handler = new RayHandler(world);
+		handler.setAmbientLight(1, 1, 1, 0);
+		new PointLight(handler, 100, new Color(1, 1, 1, 1), 100 / 16f, 568 / 16f, 536 / 16f);
+
+		interacted = new ArrayList<Body>();
 
 		TiledMapTileLayer collision = (TiledMapTileLayer) maze.getLayers().get("collision");
 		for (int i = 0; i < collision.getWidth(); i++) {
 			for (int j = 0; j < collision.getHeight(); j++) {
-				if (collision.getCell(i, j) != null) {
-					world.add(new Block().getItem(), i * 16, j * 16, 16, 16);
-				}
+				if (collision.getCell(i, j) != null)
+					new Block(i, j, 1, 1, world);
 			}
 		}
 		
-		player = new Player(560, 458, 32, 32);
-		world.add(player.getItem(), player.getX() + 8, player.getY() + 6, 16, 16);
+		player = new Player(560 / 16f, 458 / 16f, 2, 2, world);
 		
-		dummy1 = new Dummy(528, 512, 32, 32);
-		world.add(dummy1.getItem(), dummy1.getX() + 8, dummy1.getY(), 16, 16);
+		dummy1 = new Dummy(528 / 16f, 512 / 16f, 2, 2, world);
 		
-		dummy2 = new Dummy(560, 512, 32, 32);
-		world.add(dummy2.getItem(), dummy2.getX() + 8, dummy2.getY(), 16, 16);
+		dummy2 = new Dummy(560 / 16f, 512 / 16f, 2, 2, world);
 		
-		dummy3 = new Dummy(592, 512, 32, 32);
-		world.add(dummy3.getItem(), dummy3.getX() + 8, dummy3.getY(), 16, 16);
+		dummy3 = new Dummy(592 / 16f, 512 / 16f, 2, 2, world);
 		
 		Gdx.input.setInputProcessor(player);
 		Music BOTW = Gdx.audio.newMusic(Gdx.files.internal("BOTW.mp3"));
@@ -78,24 +90,28 @@ public class RoguelikeTest extends ApplicationAdapter {
 		BOTW.play();
 	}
 
-	@Override
 	public void render () {
 		//Gdx.input.setCursorPosition(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2); 
 		
 		float time = Gdx.graphics.getDeltaTime();
+
+		processActs(time);
 		
-		player.act(time); //Processing Stage
-		dummy1.act(time);
-		dummy2.act(time);
-		dummy3.act(time);
+		Box2DTime += time; //Box2D Stuff
 		
-		processCollisions(world.move(player.getItem(), player.getX() + 8, player.getY() + 6, filter));
+		while (Box2DTime >= TIME_STEP) {
+			Box2DTime -= TIME_STEP;
+			world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
+		}
+
+		processCollisions();
+		processPositions();
 		
-		viewport.getCamera().position.set(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2, 0);
+		viewport.getCamera().position.set(player.getX() + player.getWidth() / 2, player.getY() + player.getHeight() / 2, 0); //Rendering stage
 		
 		viewport.getCamera().update();
 		
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); //Rendering stage
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); 
 		
 		batch.setProjectionMatrix(viewport.getCamera().combined);
 		
@@ -109,21 +125,25 @@ public class RoguelikeTest extends ApplicationAdapter {
 		dummy2.draw(batch);
 		dummy3.draw(batch);
 		batch.end();
+		
+		br.render(world, viewport.getCamera().combined.translate(new Vector3(0.5f, 0.5f, 0)));
+		
+		handler.setCombinedMatrix((OrthographicCamera) viewport.getCamera());
+		//handler.updateAndRender();
 	}
 	
-	@Override
-	public void resize(int width, int height) {
-		viewport.update(width, height);
+	private void processActs(float time) {
+		player.act(time);
+		dummy1.act(time);
+		dummy2.act(time);
+		dummy3.act(time);
 	}
 	
-	@Override
-	public void dispose () {
-		renderer.dispose();
-		maze.dispose();
-		batch.dispose();
+	private void processPositions() {
+		player.updatePosition();
 	}
 	
-	public void processCollisions(Result result) {
+	public void processCollisions() {
 		/*
 		for (int i = 0; i < result.projectedCollisions.size(); i++) {
 			Collision collision = result.projectedCollisions.get(i);
@@ -133,9 +153,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 		}
 		*/
 		
-		player.setPosition(world.getRect(player.getItem()).x - 8, world.getRect(player.getItem()).y - 6);
-		
-		if (player.getInteracting()) {
+		/*if (player.getInteracting()) {
 			world.queryRect(player.getX(), player.getY(), player.getWidth(), player.getHeight(), null, interacted);
 			
 			Rect playerRect = world.getRect(player.getItem());
@@ -164,6 +182,17 @@ public class RoguelikeTest extends ApplicationAdapter {
 
 			player.setInteracting(false);
 		}
+		*/
+	}
+	
+	public void resize(int width, int height) {
+		viewport.update(width, height);
+	}
+	
+	public void dispose () {
+		renderer.dispose();
+		maze.dispose();
+		batch.dispose();
 	}
 	
 	public static Animation<TextureRegion> makeAnimation(Texture tex, float frameDuration, int rows, int columns, int cellWidth, int cellHeight) {

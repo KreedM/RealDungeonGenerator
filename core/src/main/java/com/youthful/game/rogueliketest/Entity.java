@@ -2,23 +2,25 @@ package com.youthful.game.rogueliketest;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.dongbat.jbump.Collision;
-import com.dongbat.jbump.Item;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.World;
 
 public abstract class Entity {
-	private Item<Entity> self;
+	private Body self;
 	private float x, y;
 	private float width, height;
 	private float originX, originY;
 	private float scaleX = 1, scaleY = 1;
 	private float rotation;
 	private final Color color = new Color(1, 1, 1, 1);
-
-	public Entity() {
-		self = new Item<Entity>(this);
+	
+	public Entity(float x, float y, float width, float height) {
+		setBounds(x, y, width, height);
 	}
 	
-	public abstract void processCollision(Collision collision);
+	public abstract void processCollision();
+	
+	public abstract void createBody(World world);
 	
 	public void draw (Batch batch) {
 		
@@ -28,8 +30,12 @@ public abstract class Entity {
 		
 	}
 
-	public Item<Entity> getItem() {
+	public Body getBody() {
 		return self;
+	}
+
+	public void setBody(Body body) {
+		this.self = body;
 	}
 	
 	public float getX () {

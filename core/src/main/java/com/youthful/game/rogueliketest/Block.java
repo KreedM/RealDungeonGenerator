@@ -1,35 +1,37 @@
 package com.youthful.game.rogueliketest;
 
-import com.dongbat.jbump.Collision;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
 
 public class Block extends Entity implements Slidable{	
 	
-	public void processCollision(Collision collision) {
-		/*
-		if (collision.item.userData instanceof Player) {
-			Player player = (Player) collision.item.userData;
-			
-			float x = player.getX() + 8, y = player.getY() + 6;
-			if (collision.normal.x == -1 && collision.touch.x < x) {
-				x = collision.touch.x;
-			}
+	public Block(float x, float y, int width, int height, World world) {
+		super(x, y, width, height);
+		createBody(world);
+	}
 
-			else if (collision.normal.x == 1 && collision.touch.x > x) {
-				x = collision.touch.x;
-			}
+	public void processCollision() {}
 
-			if (collision.normal.y == -1 && collision.touch.y < y) {
-				y = collision.touch.y;
-			}
-
-			else if (collision.normal.y == 1 && collision.touch.y > y) {
-				y = collision.touch.y;
-			}
-				
-			player.setX(x - 8);
-			player.setY(y - 6);
-			
-		}
-		*/
+	public void createBody(World world) {
+		BodyDef tileDef = new BodyDef();
+		tileDef.type = BodyType.StaticBody;
+		
+		tileDef.position.set(getX(), getY());
+		
+		Body tile = world.createBody(tileDef);
+		
+		tile.setUserData(this);
+		
+		PolygonShape tileShape = new PolygonShape();
+		tileShape.setAsBox(getWidth() / 2, getWidth() / 2);
+		
+		tile.createFixture(tileShape, 0);
+		
+		tileShape.dispose();
+		
+		setBody(tile);
 	}
 }

@@ -2,22 +2,23 @@ package com.youthful.game.rogueliketest;
 
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Animation.PlayMode;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-import com.dongbat.jbump.Collision;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 
 public class Player extends Entity implements InputProcessor {
 	private static final float FRAME_DURATION = 0.2f; 
-	private static final float SPEED = 400;
+	private static final float SPEED = 400 / 16f;
 	
 	private Vector2 velocity;
-	
-	private OrthographicCamera camera;
 	
 	private boolean left, right, up, down;
 	private boolean leftHold, rightHold, upHold, downHold;
@@ -33,10 +34,11 @@ public class Player extends Entity implements InputProcessor {
 	
 	private float moveTime, attackTime;
 	
-	public Player(float x, float y, int width, int height) {
-		super();
+	public Player(float x, float y, float width, float height, World world) {
+		super(x, y, width, height);
+		createBody(world);
 		
-		setBounds(x, y, width, height);
+		velocity = new Vector2();
 		
 		Texture spriteSheet = new Texture("entities/player/spritesheet.png");
 		TextureRegion[][] regions = TextureRegion.split(spriteSheet, 32, 32);
@@ -62,44 +64,39 @@ public class Player extends Entity implements InputProcessor {
 		attackAnim = RoguelikeTest.makeAnimation(new Texture("entities/player/AttackAnim.png"), 1 / 10f, 2, 5, 32, 32);
 		
 		currAnim = upAnim;
-		
-		velocity = new Vector2();
 	}
 	
 	public void act(float delta) {
 		processDirection(delta);
 		
 		processAnimations(delta);
-		
-		setX(getX() + velocity.x * delta);
-		setY(getY() + velocity.y * delta);
 	}
 	
 	public void draw(Batch batch) {
 		batch.draw(currAnim.getKeyFrame(moveTime), getX(), getY(), getOriginX(), getOriginY(), getWidth(), getHeight(), getScaleX(), getScaleY(), getRotation());
 		
 		if (attacking)
-			batch.draw(attackAnim.getKeyFrame(attackTime), getX() + 64, getY(), 64, 64);
+			batch.draw(attackAnim.getKeyFrame(attackTime), getX() + 4, getY(), 4, 4);
 	}
 
-	public void processDirection(float delta) {
+	public void processDirection(float delta) {		
 		if(leftHold) {
 			if(right) {
-				velocity.x = Math.min(SPEED, velocity.x+SPEED/4);
+				velocity.x = SPEED;
 				xDir = 1;
 			}
 			else {
-				velocity.x = Math.max(-SPEED, velocity.x-SPEED/4);
+				velocity.x = -SPEED;
 				xDir = -1;
 			}
 		}
 		else if(rightHold) {
 			if(left) {
-				velocity.x = Math.max(-SPEED, velocity.x-SPEED/4);
+				velocity.x = -SPEED;
 				xDir = -1;
 			}
 			else {
-				velocity.x = Math.min(SPEED, velocity.x+SPEED/4);
+				velocity.x = SPEED;
 				xDir = 1;
 			}
 		}
@@ -111,21 +108,21 @@ public class Player extends Entity implements InputProcessor {
 		
 		if(downHold) {
 			if(up) {
-				velocity.y = Math.min(SPEED, velocity.y + SPEED / 4);
+				velocity.y = SPEED;
 				yDir = 1;
 			}
 			else {
-				velocity.y = Math.max(-SPEED, velocity.y - SPEED / 4);
+				velocity.y = -SPEED;
 				yDir = -1;
 			}
 		}
 		else if(upHold) {
 			if(down) {
-				velocity.y = Math.max(-SPEED, velocity.y - SPEED / 4);
+				velocity.y = -SPEED;
 				yDir = -1;
 			}
 			else {
-				velocity.y = Math.min(SPEED, velocity.y + SPEED / 4);
+				velocity.y = SPEED;
 				yDir = 1;
 			}
 		}
@@ -134,6 +131,8 @@ public class Player extends Entity implements InputProcessor {
 			velocity.y = 0;
 			yDir = 0;
 		}
+
+		getBody().setLinearVelocity(velocity);
 	}
 	
 	public void processAnimations(float delta) {
@@ -185,6 +184,10 @@ public class Player extends Entity implements InputProcessor {
 			else if (yDir == 1)
 				currAnim = upRightAnim;
 		}
+	}
+	
+	public void updatePosition() {
+		setPosition(getBody().getPosition().x - 0.5f, getBody().getPosition().y - 6 / 16f);
 	}
 	
 	public boolean keyDown(int keycode) {
@@ -255,8 +258,24 @@ public class Player extends Entity implements InputProcessor {
 		return false;
 	}
 	
-	public OrthographicCamera getCamera() {
-		return camera;
+	public void createBody(World world) {
+		BodyDef playerDef = new BodyDef();
+		playerDef.type = BodyType.DynamicBody;
+		
+		playerDef.position.set(getX() + 0.5f, getY() + 6 / 16f);
+		
+		Body player = world.createBody(playerDef);
+		
+		player.setUserData(this);
+		
+		PolygonShape playerShape = new PolygonShape();
+		playerShape.setAsBox(0.5f, 0.5f);
+		
+		player.createFixture(playerShape, 0);
+		
+		playerShape.dispose();
+		
+		setBody(player);
 	}
 	
 	public boolean getInteracting() {
@@ -279,5 +298,5 @@ public class Player extends Entity implements InputProcessor {
 
 	public boolean scrolled(int amount) {return false;}
 	
-	public void processCollision(Collision collision) {}
+	public void processCollision() {}
 }

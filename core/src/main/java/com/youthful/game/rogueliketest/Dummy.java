@@ -10,12 +10,16 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.dongbat.jbump.Collision;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 
 public class Dummy extends Entity implements Slidable, Interactable {
 	private static final float FRAME_DURATION = 0.2f; 
 	private static final float MESSAGE_TIME = 1;
-	private static final int MESSAGE_WIDTH = 75; 
+	private static final float MESSAGE_WIDTH = 75 / 16f; 
 	
 	private String message;
 	private Animation<TextureRegion> currAnim; 
@@ -26,14 +30,13 @@ public class Dummy extends Entity implements Slidable, Interactable {
 	private float interactTime;
 	private boolean interacting;
 	
-	public Dummy(float x, float y, int width, int height) {
-		super();
-		
-		setBounds(x, y, 32, 32);
+	public Dummy(float x, float y, float width, float height, World world) {
+		super(x, y, width, height);
+		createBody(world);
 		
 		TextureAtlas atlas = new TextureAtlas("Dawnlike.atlas");
 		font = new BitmapFont(Gdx.files.internal("font.fnt"), atlas.findRegion("font"));
-		font.getData().setScale(1 / 3f);
+		font.getData().setScale(1 / 48f);
 		font.setUseIntegerPositions(false);
 		layout = new GlyphLayout();
 		
@@ -43,6 +46,7 @@ public class Dummy extends Entity implements Slidable, Interactable {
 		currAnim = new Animation<TextureRegion>(FRAME_DURATION, regions[0]);
 		
 		currAnim.setPlayMode(PlayMode.LOOP);
+		
 	}
 	
 	public void act(float delta) {
@@ -51,7 +55,7 @@ public class Dummy extends Entity implements Slidable, Interactable {
 	
 	public void draw(Batch batch) {
 		batch.draw(currAnim.getKeyFrame(time), getX(), getY(), getOriginX(), getOriginY(), getWidth(), getHeight(), getScaleX(), getScaleY(), getRotation());
-	
+
 		if(interacting) {
 			if (interactTime < MESSAGE_TIME) {
 				layout.setText(font, message, 0, message.length(), getColor(), MESSAGE_WIDTH, Align.center, true, null);
@@ -72,5 +76,25 @@ public class Dummy extends Entity implements Slidable, Interactable {
 		interacting = true;
 	}
 	
-	public void processCollision(Collision collision) {}
+	public void processCollision() {}
+
+	public void createBody(World world) {
+		BodyDef dummyDef = new BodyDef();
+		dummyDef.type = BodyType.StaticBody;
+		
+		dummyDef.position.set(getX() + 0.5f, getY() + 6 / 16f);
+		
+		Body dummy = world.createBody(dummyDef);
+		
+		dummy.setUserData(this);
+		
+		PolygonShape dummyShape = new PolygonShape();
+		dummyShape.setAsBox(0.5f, 0.5f);
+		
+		dummy.createFixture(dummyShape, 0);
+		
+		dummyShape.dispose();
+		
+		setBody(dummy);
+	}
 }
