@@ -16,7 +16,7 @@ import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 
 public class Player extends Entity implements InputProcessor {
 	private static final float FRAME_DURATION = 0.2f; 
-	private static final float SPEED = 400 / 16f;
+	private static final float SPEED = 8;
 	
 	private Vector2 velocity;
 	
@@ -270,7 +270,7 @@ public class Player extends Entity implements InputProcessor {
 		player.setUserData(this);
 		
 		PolygonShape playerShape = new PolygonShape();
-		playerShape.setAsBox(0.45f, 0.45f);
+		playerShape.setAsBox(0.40f, 0.40f);
 		
 		player.createFixture(playerShape, 0);
 		

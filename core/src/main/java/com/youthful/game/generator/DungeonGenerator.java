@@ -1,6 +1,11 @@
 package com.youthful.game.generator;
 
 import java.util.ArrayList;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TiledMapTile;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell;
 import com.badlogic.gdx.math.RandomXS128;
 
 //Data type that generates a randomized dungeon using a BSP tree
@@ -14,12 +19,14 @@ public class DungeonGenerator {
 	    public static final float MIN_CONTAINER_WIDTH_MULTIPLIER = 0.4f, MAX_CONTAINER_WIDTH_MULTIPLIER = 0.6f;
 	    public static final float MIN_ROOM_HEIGHT_MULTIPLIER = 0.6f, MAX_ROOM_HEIGHT_MULTIPLIER = 0.8f;
 	    public static final float MIN_ROOM_WIDTH_MULTIPLIER = 0.6f, MAX_ROOM_WIDTH_MULTIPLIER = 0.8f;
-	    
-	    public Leaf tree; //Starting node
-	    public ArrayList<Leaf> leaves; //Arraylist of the lowest leaves
+	   
 	    public boolean[][] corridors; //2D boolean array marking the places where corridors exist
 	    public int size; //The square size of the entire dungeon
 	    public int iterations; //# of times the BSP split will be iterated
+	    public Leaf tree; //Starting node
+	    public ArrayList<Leaf> leaves; //Arraylist of the lowest leaves
+	    public TiledMap dungeon, room;
+	    public TiledMapTile[][] roomTiles;
 	    public RandomXS128 randomGenerator;
 	    
 	    public DungeonGenerator(int size, int iterations, boolean startGeneration, long seed) {
@@ -39,7 +46,9 @@ public class DungeonGenerator {
 	    	corridors = new boolean[size][size];
 	    	
 	    	randomGenerator = new RandomXS128();
-	    	randomGenerator.setSeed((long) (Math.random() * randomGenerator.nextInt()));
+	    	long seed = (long) (Math.random() * randomGenerator.nextInt());
+	    	randomGenerator.setSeed(seed);
+	    	System.out.println(seed);
 	    	
 	    	if (startGeneration)
 				generateDungeon();
@@ -56,6 +65,98 @@ public class DungeonGenerator {
 	    	
 	    	tree.addLeaf(leaves);
 	    }
+	    
+	    public void generateMap(int tileSize) {
+			dungeon = new TiledMap();
+			room = new TmxMapLoader().load("maps/walls.tmx");
+			TiledMapTileLayer dungeonLayer = new TiledMapTileLayer(size, size, tileSize, tileSize), roomLayer = (TiledMapTileLayer) room.getLayers().get(0);
+
+			roomTiles = new TiledMapTile[4][4];
+			
+			for (int i = 0; i < 4; i++) {
+				for (int j = 0; j < 4; j++)
+					roomTiles[i][j] = roomLayer.getCell(i, j).getTile();
+			}
+			
+			for (int i = 0; i < 50; i++) {
+				for (int j = 0; j < 50; j++) {
+					Cell cell = new Cell();
+					
+					dungeonLayer.setCell(i, j, cell);
+					
+					if (corridors[i][j])
+						cell.setTile(roomTiles[3][3]);
+				}
+			}
+			
+			for (Leaf roomLeaf :leaves) {
+				copyRoom(roomLeaf.room, dungeonLayer, roomTiles, corridors);
+			}
+			
+			dungeonLayer.setName("background");
+			dungeon.getLayers().add(dungeonLayer);
+			
+			/*
+			JFrame frame = new JFrame();
+			frame.setTitle("Dungeon Drawer");
+			frame.setContentPane(new DungeonDrawer(size, leaves, corridors));
+			frame.pack();
+			frame.setLocationRelativeTo(null);
+			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			frame.setVisible(true);
+			*/
+		}
+		
+		private void copyRoom(Rectangle rect, TiledMapTileLayer dungeonLayer, TiledMapTile[][] roomTiles, boolean[][] corridors) {
+			for (int i = 1; i < rect.width - 1; i++) {
+				if (!corridors[rect.x + i][rect.y] || !corridors[rect.x + i][rect.y + 1])	
+					dungeonLayer.getCell(rect.x + i, rect.y).setTile(roomTiles[1][0]);
+				
+				if(!corridors[rect.x + i][rect.y + rect.height - 1] || !corridors[rect.x + i][rect.y + rect.height - 2]) {
+					dungeonLayer.getCell(rect.x + i, rect.y + rect.height - 1).setTile(roomTiles[1][3]);
+					dungeonLayer.getCell(rect.x + i, rect.y + rect.height - 2).setTile(roomTiles[1][2]);
+				}
+					
+				for (int j = 1; j < rect.height - 2; j++)
+					dungeonLayer.getCell(rect.x + i, rect.y + j).setTile(roomTiles[3][2]);
+			}
+			
+			for (int i = 1; i < rect.height - 1; i++) {
+				if(!corridors[rect.x][rect.y + i] || !corridors[rect.x + 1][rect.y + i])
+					dungeonLayer.getCell(rect.x, rect.y + i).setTile(roomTiles[0][1]);
+
+				if(!corridors[rect.x + rect.width - 1][rect.y + i] || !corridors[rect.x + rect.width - 2][rect.y + i])
+					dungeonLayer.getCell(rect.x + rect.width - 1, rect.y + i).setTile(roomTiles[2][1]);
+			}
+			
+			if (corridors[rect.x][rect.y]) {
+				dungeonLayer.getCell(rect.x, rect.y).setTile(roomTiles[3][3]);
+				dungeonLayer.getCell(rect.x + 1, rect.y).setTile(roomTiles[3][3]);
+			}
+			else
+				dungeonLayer.getCell(rect.x, rect.y).setTile(roomTiles[0][0]);
+			
+			if (corridors[rect.x][rect.y + rect.height - 1]) {
+				dungeonLayer.getCell(rect.x, rect.y + rect.height - 1).setTile(roomTiles[3][3]);
+				dungeonLayer.getCell(rect.x + 1, rect.y + rect.height - 1).setTile(roomTiles[3][3]);
+			}
+			else
+				dungeonLayer.getCell(rect.x, rect.y + rect.height - 1).setTile(roomTiles[0][3]);
+			
+			if (corridors[rect.x + rect.width - 1][rect.y + rect.height - 1]) {
+				dungeonLayer.getCell(rect.x + rect.width - 1, rect.y + rect.height - 1).setTile(roomTiles[3][3]);
+				dungeonLayer.getCell(rect.x + rect.width - 2, rect.y + rect.height - 1).setTile(roomTiles[3][3]);
+			}
+			else
+				dungeonLayer.getCell(rect.x + rect.width - 1, rect.y + rect.height - 1).setTile(roomTiles[2][3]);
+
+			if (corridors[rect.x + rect.width - 1][rect.y]) {
+				dungeonLayer.getCell(rect.x + rect.width - 1, rect.y).setTile(roomTiles[3][3]);
+				dungeonLayer.getCell(rect.x + rect.width - 2, rect.y).setTile(roomTiles[3][3]);
+			}
+			else
+				dungeonLayer.getCell(rect.x + rect.width - 1, rect.y).setTile(roomTiles[2][0]);
+		}
 	    
 	    private void generateContainers() { //Initializes the tree
 	        tree = Leaf.splitLeaves(iterations, new Rectangle(0, 0, size, size), this);
@@ -132,10 +233,10 @@ public class DungeonGenerator {
 		        
 		        Point center = container.center;
 		        
-		        int x = randomRange(Math.max(container.x, center.x - roomW),
+		        int x = randomRange(Math.max(container.x, center.x - roomW + 2),
 		        Math.min(container.x + container.width - roomW, center.x));
 		        
-		        int y = randomRange(Math.max(container.y, center.y - roomH),
+		        int y = randomRange(Math.max(container.y, center.y - roomH + 2),
 		        Math.min(container.y + container.height - roomH, center.y));
 		        
 		        leaf.room = new Rectangle(x, y, roomW, roomH);
@@ -145,6 +246,11 @@ public class DungeonGenerator {
 		        generateRoom(leaf.right);
 		    }
 		}
+	    
+	    public void dispose() {
+	    	room.dispose();
+	    	dungeon.dispose();
+	    }
 		
 	    //Helper methods
 	    

@@ -50,6 +50,11 @@ public class DungeonDrawer extends JPanel {
 		
 		*/
 		
+		g.setColor(Color.DARK_GRAY);
+		
+		for (Rectangle room : rooms)
+			g.fillRect(room.x * tileSize, room.y * tileSize, room.width * tileSize, room.height * tileSize);
+		
 		g.setColor(Color.LIGHT_GRAY);
 		
 		for (int i = 0; i < size; i++) {
@@ -58,11 +63,5 @@ public class DungeonDrawer extends JPanel {
 					g.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
 			}
 		}
-		
-		g.setColor(Color.DARK_GRAY);
-		
-		for (Rectangle room : rooms)
-			g.fillRect(room.x * tileSize, room.y * tileSize, room.width * tileSize, room.height * tileSize);
-		
 	}
 }
