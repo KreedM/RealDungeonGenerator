@@ -23,7 +23,6 @@ import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-
 import box2dLight.PointLight;
 import box2dLight.RayHandler;
 
@@ -44,8 +43,9 @@ public class RoguelikeTest extends ApplicationAdapter {
 	
 	private World world;
 	private Box2DDebugRenderer br;
-	private ArrayList<Body> interacted;
+	private ArrayList<Body> interacting;
 	private RayHandler handler;
+	private InteractCallback callback;
 	
 	@Override
 	public void create () {
@@ -59,13 +59,14 @@ public class RoguelikeTest extends ApplicationAdapter {
 		maze = new TmxMapLoader().load("maps/maze.tmx");
 		renderer = new OrthogonalTiledMapRenderer(maze, 1 / 16f, batch);
 
+		interacting = new ArrayList<Body>();
+		
 		world = new World(new Vector2(0, 0), true);
 		br = new Box2DDebugRenderer();
+		callback = new InteractCallback(interacting);
 		handler = new RayHandler(world);
-		handler.setAmbientLight(1, 1, 1, 0);
-		new PointLight(handler, 100, new Color(1, 1, 1, 1), 100 / 16f, 568 / 16f, 536 / 16f);
-
-		interacted = new ArrayList<Body>();
+		handler.setAmbientLight(0, 0, 0, 0.05f);
+		
 
 		TiledMapTileLayer collision = (TiledMapTileLayer) maze.getLayers().get("collision");
 		for (int i = 0; i < collision.getWidth(); i++) {
@@ -76,6 +77,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 		}
 		
 		player = new Player(560 / 16f, 458 / 16f, 2, 2, world);
+		new PointLight(handler, 100).attachToBody(player.getBody());
 		
 		dummy1 = new Dummy(528 / 16f, 512 / 16f, 2, 2, world);
 		
@@ -129,7 +131,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 		br.render(world, viewport.getCamera().combined.translate(new Vector3(0.5f, 0.5f, 0)));
 		
 		handler.setCombinedMatrix((OrthographicCamera) viewport.getCamera());
-		//handler.updateAndRender();
+		handler.updateAndRender();
 	}
 	
 	private void processActs(float time) {
@@ -153,36 +155,28 @@ public class RoguelikeTest extends ApplicationAdapter {
 		}
 		*/
 		
-		/*if (player.getInteracting()) {
-			world.queryRect(player.getX(), player.getY(), player.getWidth(), player.getHeight(), null, interacted);
+		if (player.getInteracting()) {
+			interacting.clear();
+
+			world.QueryAABB(callback, player.getBody().getPosition().x - 16, player.getBody().getPosition().y - 16, player.getBody().getPosition().x + 16, player.getBody().getPosition().y + 16);
 			
-			Rect playerRect = world.getRect(player.getItem());
+			float distance = Float.MAX_VALUE, dist2 = 0, x = player.getBody().getPosition().x, y = player.getBody().getPosition().y;
+			Interactable interactor = null;
 			
-			Item<Entity> interacting = null;
-			Rect interactingRect = null;
-			
-			for (Item<Entity> item : interacted) {
-				if (item.userData instanceof Interactable) {
-					Rect itemRect = world.getRect(item);
-					if (interacting == null) {
-						interacting = item;
-						interactingRect = world.getRect(interacting);
-					}
-					else {
-						if(Vector2.dst2(playerRect.x, playerRect.y, itemRect.x, itemRect.y) < Vector2.dst2(playerRect.x, playerRect.y, interactingRect.x, interactingRect.y)) {
-							interacting = item;
-							interactingRect = world.getRect(interacting);
-						}
-					}
+			for (Body body : interacting) {
+				dist2 = Vector2.dst2(x, y, body.getPosition().x, body.getPosition().y);
+				
+				if (dist2 < distance) {
+					distance = dist2;
+					interactor = (Interactable) body.getUserData();
 				}
 			}
 			
-			if (interacting != null)
-				((Interactable) interacting.userData).interact(player);
-
+			if(interactor != null)
+				interactor.interact(player);
+				
 			player.setInteracting(false);
 		}
-		*/
 	}
 	
 	public void resize(int width, int height) {
