@@ -50,8 +50,8 @@ public class RoguelikeTest extends ApplicationAdapter {
 		world = new World(new Vector2(0, 0), true);
 		br = new Box2DDebugRenderer();
 		
-		generator = new DungeonGenerator(50, 6, true);
-		generator.generateMap(16);
+		generator = new DungeonGenerator(50, 6, true, -1960201350);
+		generator.generateMap(32);
 		
 		TiledMapTileLayer dungeonBackground = (TiledMapTileLayer) generator.dungeon.getLayers().get("background");
 		
@@ -73,7 +73,7 @@ public class RoguelikeTest extends ApplicationAdapter {
 		
 		player = new Player(x, y, 2, 2, world);
 		
-		renderer = new OrthogonalTiledMapRenderer(generator.dungeon, 1 / 16f);
+		renderer = new OrthogonalTiledMapRenderer(generator.dungeon, 1 / 32f);
 		
 		Gdx.input.setInputProcessor(player);
 		

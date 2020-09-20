@@ -68,7 +68,7 @@ public class DungeonGenerator {
 	    
 	    public void generateMap(int tileSize) {
 			dungeon = new TiledMap();
-			room = new TmxMapLoader().load("maps/walls.tmx");
+			room = new TmxMapLoader().load("maps/untitled.tmx");
 			TiledMapTileLayer dungeonLayer = new TiledMapTileLayer(size, size, tileSize, tileSize), roomLayer = (TiledMapTileLayer) room.getLayers().get(0);
 
 			roomTiles = new TiledMapTile[4][4];
@@ -112,12 +112,10 @@ public class DungeonGenerator {
 				if (!corridors[rect.x + i][rect.y] || !corridors[rect.x + i][rect.y + 1])	
 					dungeonLayer.getCell(rect.x + i, rect.y).setTile(roomTiles[1][0]);
 				
-				if(!corridors[rect.x + i][rect.y + rect.height - 1] || !corridors[rect.x + i][rect.y + rect.height - 2]) {
+				if(!corridors[rect.x + i][rect.y + rect.height - 1] || !corridors[rect.x + i][rect.y + rect.height - 2])
 					dungeonLayer.getCell(rect.x + i, rect.y + rect.height - 1).setTile(roomTiles[1][3]);
-					dungeonLayer.getCell(rect.x + i, rect.y + rect.height - 2).setTile(roomTiles[1][2]);
-				}
 					
-				for (int j = 1; j < rect.height - 2; j++)
+				for (int j = 1; j < rect.height - 1; j++)
 					dungeonLayer.getCell(rect.x + i, rect.y + j).setTile(roomTiles[3][2]);
 			}
 			
@@ -233,10 +231,10 @@ public class DungeonGenerator {
 		        
 		        Point center = container.center;
 		        
-		        int x = randomRange(Math.max(container.x, center.x - roomW + 2),
+		        int x = randomRange(Math.max(container.x, center.x - roomW + 1),
 		        Math.min(container.x + container.width - roomW, center.x));
 		        
-		        int y = randomRange(Math.max(container.y, center.y - roomH + 2),
+		        int y = randomRange(Math.max(container.y, center.y - roomH + 1),
 		        Math.min(container.y + container.height - roomH, center.y));
 		        
 		        leaf.room = new Rectangle(x, y, roomW, roomH);
